@@ -1,0 +1,12 @@
+{
+  "Create Variable": {
+    "prefix": "local",
+    "body": ["local ${1:Name} = ${2:Value}"],
+    "description": "Create a Lua Variable"
+  },
+  "Print Script Name": {
+    "prefix": "print",
+    "body": ["print('${1}')"],
+    "description": "Print log"
+  }
+}

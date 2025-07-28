@@ -1,0 +1,80 @@
+{
+  "name": "aryosense",
+  "displayName": "Aryosense",
+  "description": "",
+  "publisher": "darkdivine",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:lua",
+    "onLanguage:luau",
+    "onCommand:aryosense.helloWorld"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint src",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "lua",
+        "aliases": [
+          "Lua"
+        ],
+        "extensions": [
+          ".lua"
+        ]
+      },
+      {
+        "id": "luau",
+        "aliases": [
+          "Luau"
+        ],
+        "extensions": [
+          ".luau"
+        ]
+      }
+    ],
+    "snippets": [
+      {
+        "language": "lua",
+        "path": "./snippets/lua.json"
+      },
+      {
+        "language": "luau",
+        "path": "./snippets/lua.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "aryosense.helloWorld",
+        "title": "Hello World from Aryosense"
+      }
+    ],
+    "configuration": {
+      "title": "Aryosense",
+      "properties": {}
+    }
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.102.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
