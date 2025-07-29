@@ -1,9 +1,5 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode'
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
   const rootScriptProvider = vscode.languages.registerCompletionItemProvider(['lua', 'luau'], {
     provideCompletionItems(document, position) {
@@ -21,92 +17,214 @@ export function activate(context: vscode.ExtensionContext) {
     },
   })
 
-  const scriptDotProvider = vscode.languages.registerCompletionItemProvider(
-    ['lua', 'luau'],
-    {
-      provideCompletionItems(document, position) {
-        const line = document.lineAt(position).text.substr(0, position.character)
+  const globalWordProvider = vscode.languages.registerCompletionItemProvider(['lua', 'luau'], {
+    provideCompletionItems(document, position) {
+      const wordRange = document.getWordRangeAtPosition(position)
+      const word = wordRange ? document.getText(wordRange) : ''
 
-        if (!/script(\.\w+)*\.$/.test(line)) {
-          return undefined
-        }
-
-        const props = [
-          {
-            label: 'Parent',
-            detail: 'The parent object',
-            documentation: 'Refers to the parent of the instance.',
-          },
-          {
-            label: 'Name',
-            detail: 'The name of the object',
-            documentation: 'Returns or sets the Name property.',
-          },
-        ]
-
-        return props.map((p) => {
-          const item = new vscode.CompletionItem(p.label, vscode.CompletionItemKind.Class)
+      const keywords = [
+        {
+          label: 'local',
+          kind: vscode.CompletionItemKind.Module,
+          doc: 'This is a local variable defined with `local`.',
+        },
+        {
+          label: 'math',
+          kind: vscode.CompletionItemKind.Module,
+          doc: 'This library is an interface to the standard C math library, providing all of its functions inside the math table.',
+        },
+        { label: 'script', kind: vscode.CompletionItemKind.Property, doc: 'Current script reference' },
+        {
+          label: 'workspace',
+          kind: vscode.CompletionItemKind.Property,
+          doc: 'A reference to the Workspace service, which contains all of the physical components of a Aryosense Studio world.',
+        },
+        { label: 'game', kind: vscode.CompletionItemKind.Property, doc: 'Top-level game object' },
+        {
+          label: 'time',
+          kind: vscode.CompletionItemKind.Function,
+          doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
+        },
+        {
+          label: 'print',
+          kind: vscode.CompletionItemKind.Function,
+          doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
+        },
+        {
+          label: 'for',
+          kind: vscode.CompletionItemKind.Keyword,
+          doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
+        },
+        {
+          label: 'in',
+          kind: vscode.CompletionItemKind.Keyword,
+          doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
+        },
+      ]
+      return keywords
+        .filter((k) => k.label.startsWith(word))
+        .map((k) => {
+          const item = new vscode.CompletionItem(k.label, k.kind)
+          item.documentation = new vscode.MarkdownString(k.doc)
           item.sortText = '0000'
-          item.detail = p.detail
-          item.documentation = new vscode.MarkdownString(p.documentation)
           return item
         })
-      },
     },
-    '.' // تریگر
-  )
+  })
 
-  const scriptColonProvider = vscode.languages.registerCompletionItemProvider(
+  const localVariableDotProvider = vscode.languages.registerCompletionItemProvider(
     ['lua', 'luau'],
     {
       provideCompletionItems(document, position) {
         const line = document.lineAt(position).text.substring(0, position.character)
 
-        // بررسی اینکه کاربر تایپ کرده چیزی مثل script:
-        if (!/script(\.\w+)*:$/.test(line)) {
-          return undefined
+        if (!/\w*\.$/.test(line)) return undefined
+
+        const text = document.getText()
+        const variableRegex = /local\s+(\w+)\s*=/g
+
+        const seen = new Set<string>()
+        const matches = [...text.matchAll(variableRegex)]
+        for (const match of matches) {
+          if (match[1]) seen.add(match[1])
         }
 
-        const methods = [
-          {
-            label: 'Destroy',
-            detail: 'Destroys the object',
-            documentation: 'Equivalent to object = nil + parent removal',
-          },
-          {
-            label: 'Clone',
-            detail: 'Clones the object',
-            documentation: 'Returns a copy of the Instance',
-          },
-          {
-            label: 'GetFullName',
-            detail: 'Returns full hierarchy path',
-            documentation: 'Useful for debugging paths',
-          },
-        ]
+        const items: vscode.CompletionItem[] = []
+        for (const name of seen) {
+          const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Variable)
+          item.detail = 'Local variable'
+          item.documentation = new vscode.MarkdownString(`Variable \`${name}\` defined in this file`)
+          item.sortText = '0000'
+          items.push(item)
+        }
+
+        return items
+      },
+    },
+    '..' // ← تریگر اصلی: فقط وقتی دات زده می‌شه
+  )
+
+  const objectDotProvider = vscode.languages.registerCompletionItemProvider(
+    ['lua', 'luau'],
+    {
+      provideCompletionItems(document, position) {
+        const line = document.lineAt(position).text.substring(0, position.character)
+
+        const match = line.match(/(\w+)(\.\w+)*\.$/)
+        if (!match) return undefined
+
+        const objectName = match[1] // مثلا "script" یا "workspace"
+
+        const suggestions: Record<string, [string, string, string][]> = {
+          script: [
+            ['Parent', 'The parent object', 'Refers to the parent of the instance.'],
+            ['Name', 'The name of the object', 'Returns or sets the Name property.'],
+          ],
+          workspace: [
+            ['FindFirstChild', 'Find child by name', 'Returns the first child with the given name.'],
+            ['GetChildren', 'Get child instances', 'Returns an array of direct children.'],
+            ['GetDescendants', 'Get all nested instances', 'Returns all descendants recursively.'],
+          ],
+          player: [
+            ['Kick', 'Kick player', 'Removes the player from the game.'],
+            ['LoadCharacter', 'Load character', 'Reloads the player’s character.'],
+          ],
+        }
+
+        const rawList = suggestions[objectName]
+        if (!rawList) return undefined
+
+        return rawList.map(([label, detail, doc]) => {
+          const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Method)
+          item.sortText = '0000'
+          item.detail = detail
+          item.documentation = new vscode.MarkdownString(doc)
+          return item
+        })
+      },
+    },
+    '.'
+  )
+
+  const objectColonProvider = vscode.languages.registerCompletionItemProvider(
+    ['lua', 'luau'],
+    {
+      provideCompletionItems(document, position) {
+        const line = document.lineAt(position).text.substring(0, position.character)
+
+        const match = line.match(/(\w+)(\.\w+)*:$/)
+        if (!match) return undefined
+
+        const objectName = match[1]
+
+        const methodMap: Record<string, { label: string; detail: string; documentation: string }[]> = {
+          script: [
+            {
+              label: 'Destroy',
+              detail: 'Destroys the object',
+              documentation: 'Equivalent to object = nil + parent removal',
+            },
+            {
+              label: 'Clone',
+              detail: 'Clones the object',
+              documentation: 'Returns a copy of the Instance',
+            },
+            {
+              label: 'GetFullName',
+              detail: 'Returns full hierarchy path',
+              documentation: 'Useful for debugging paths',
+            },
+          ],
+          workspace: [
+            {
+              label: 'FindFirstChild',
+              detail: 'Finds child by name',
+              documentation: 'Returns first child matching the given name.',
+            },
+            {
+              label: 'WaitForChild',
+              detail: 'Waits for a child to appear',
+              documentation: 'Useful for async loading of child instances.',
+            },
+            {
+              label: 'IsAncestorOf',
+              detail: 'Checks ancestor relationship',
+              documentation: 'Returns true if this is an ancestor of the given descendant.',
+            },
+          ],
+          player: [
+            {
+              label: 'Kick',
+              detail: 'Kicks the player',
+              documentation: 'Removes the player from the game.',
+            },
+            {
+              label: 'LoadCharacter',
+              detail: 'Loads player’s character',
+              documentation: 'Reloads the character of the player.',
+            },
+          ],
+        }
+
+        const methods = methodMap[objectName]
+        if (!methods) return undefined
 
         return methods.map((m) => {
           const item = new vscode.CompletionItem(m.label, vscode.CompletionItemKind.Method)
-          item.sortText = '0001'
+          item.sortText = '0000'
           item.detail = m.detail
           item.documentation = new vscode.MarkdownString(m.documentation)
           return item
         })
       },
     },
-    ':' // ← این تریگر اصلیه برای ":" بعد از object
+    ':' // ← تریگر ":" برای method-style
   )
 
-  const disposable = vscode.commands.registerCommand('aryosense.helloWorld', () => {
-    // The code you place here will be executed every time your command is executed
-    // Display a message box to the user
-    vscode.window.showInformationMessage('Hello World from Aryosense!')
-  })
-
-  context.subscriptions.push(scriptColonProvider)
-  context.subscriptions.push(rootScriptProvider, scriptDotProvider)
-  context.subscriptions.push(disposable)
+  context.subscriptions.push(globalWordProvider)
+  context.subscriptions.push(localVariableDotProvider)
+  context.subscriptions.push(objectColonProvider)
+  context.subscriptions.push(rootScriptProvider, objectDotProvider)
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}

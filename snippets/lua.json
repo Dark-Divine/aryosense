@@ -8,5 +8,20 @@
     "prefix": "print",
     "body": ["print('${1}')"],
     "description": "Print log"
+  },
+  "Connect New Event": {
+    "prefix": "cfe",
+    "body": ["${1:Object}.${2:Event}:Connect(function(${3:Input})", "", "end)"],
+    "description": "Create a new connect function event"
+  },
+  "Create New For In Paires ": {
+    "prefix": "forinpairs",
+    "body": ["for ${1:Index}, ${2:Item} in pairs(${3:Table}) do", "", "end"],
+    "description": "Create a new connect function event"
+  },
+  "Create New Clone": {
+    "prefix": "Clone",
+    "body": ["Clone(${1})"],
+    "description": "Create a new connect function event"
   }
 }
