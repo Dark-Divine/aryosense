@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
       const keywords = [
         {
           label: 'local',
-          kind: vscode.CompletionItemKind.Module,
+          kind: vscode.CompletionItemKind.Keyword,
           doc: 'This is a local variable defined with `local`.',
         },
         {
@@ -46,12 +46,12 @@ export function activate(context: vscode.ExtensionContext) {
           doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
         },
         {
-          label: 'print',
-          kind: vscode.CompletionItemKind.Function,
+          label: 'for',
+          kind: vscode.CompletionItemKind.Keyword,
           doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
         },
         {
-          label: 'for',
+          label: 'in',
           kind: vscode.CompletionItemKind.Keyword,
           doc: 'Returns the amount of time, in seconds, that has elapsed since the current game instance started running. If the current game instance is not running, this will be 0.',
         },
@@ -71,38 +71,6 @@ export function activate(context: vscode.ExtensionContext) {
         })
     },
   })
-
-  const localVariableDotProvider = vscode.languages.registerCompletionItemProvider(
-    ['lua', 'luau'],
-    {
-      provideCompletionItems(document, position) {
-        const line = document.lineAt(position).text.substring(0, position.character)
-
-        if (!/\w*\.$/.test(line)) return undefined
-
-        const text = document.getText()
-        const variableRegex = /local\s+(\w+)\s*=/g
-
-        const seen = new Set<string>()
-        const matches = [...text.matchAll(variableRegex)]
-        for (const match of matches) {
-          if (match[1]) seen.add(match[1])
-        }
-
-        const items: vscode.CompletionItem[] = []
-        for (const name of seen) {
-          const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Variable)
-          item.detail = 'Local variable'
-          item.documentation = new vscode.MarkdownString(`Variable \`${name}\` defined in this file`)
-          item.sortText = '0000'
-          items.push(item)
-        }
-
-        return items
-      },
-    },
-    '..' // ← تریگر اصلی: فقط وقتی دات زده می‌شه
-  )
 
   const objectDotProvider = vscode.languages.registerCompletionItemProvider(
     ['lua', 'luau'],
@@ -218,11 +186,10 @@ export function activate(context: vscode.ExtensionContext) {
         })
       },
     },
-    ':' // ← تریگر ":" برای method-style
+    ':'
   )
 
   context.subscriptions.push(globalWordProvider)
-  context.subscriptions.push(localVariableDotProvider)
   context.subscriptions.push(objectColonProvider)
   context.subscriptions.push(rootScriptProvider, objectDotProvider)
 }
